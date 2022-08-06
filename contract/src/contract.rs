@@ -123,16 +123,18 @@ pub fn try_fuzzy_count(
         return Err(StdError::generic_err("No data"));
     }
 
+    let epsilon = config.epsilon;
+    // privacy cost = 1 * epsilon
+
     let budget_remaining = get_budget_remaining(deps.storage)?;
-    if budget_remaining <= I32F32::from_num(0_u32) {
+    if budget_remaining <= I32F32::from_num(epsilon) {
         return Err(StdError::generic_err("Privacy budget exhausted"));
     }
 
     // sensitivity is always 1 for count queries
     let sensitivity = I32F32::from_num(1_u32);
-    let epsilon: I32F32 = config.epsilon;
     
-    let scale: I32F32 = sensitivity / epsilon;
+    let scale = sensitivity / epsilon;
     
     let noise = laplace(rng, scale);
     let real_count = I32F32::from_num(stats.count);
@@ -164,14 +166,17 @@ pub fn try_fuzzy_mean(
         return Err(StdError::generic_err("No data"));
     }
 
+    let epsilon = config.epsilon;
+    // sequential queries for sum + count
+    let privacy_cost = 2 * epsilon;
+
     let budget_remaining = get_budget_remaining(deps.storage)?;
-    if budget_remaining <= I32F32::from_num(0_u32) {
+    if budget_remaining <= I32F32::from_num(privacy_cost) {
         return Err(StdError::generic_err("Privacy budget exhausted"));
     }
 
     // using a bounded sensitivity for sum (not always best approach)
     let sensitivity = stats.upper_bound - stats.lower_bound;
-    let epsilon = config.epsilon; 
 
     let scale = sensitivity / epsilon;
     
@@ -188,8 +193,7 @@ pub fn try_fuzzy_mean(
 
     let fuzzy_mean = I32F32::from_num(fuzzy_sum / fuzzy_count);
 
-    // sequential queries for sum + count
-    set_budget_remaining(deps.storage, budget_remaining - (2 * epsilon))?;
+    set_budget_remaining(deps.storage, budget_remaining - privacy_cost)?;
 
     let mut resp = Response::default();
     resp.data = Some(to_binary(&ExecuteAnswer::FuzzyMean {
