@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { a, b, c, d } from "./accounts";
 import { iris } from "./iris";
 import { exit } from "process";
+import { fail } from "assert";
 
 const CHAIN_ID = "secretdev-1";
 
@@ -198,6 +199,10 @@ const main = async () => {
     const fuzzyMeanTx = await exec(a.signer, address, contract.codeHash, fuzzyMeanExecMsg, 40_000);
     console.log(`Real mean: ${real_average}`);
     console.log("Fuzzy mean: "+ fromUtf8(fuzzyMeanTx.data[0]));
+
+    console.log("Privacy budget should be used up so cannot do another fuzzy mean");
+    const failedPrivacyBudgetTx = await exec(a.signer, address, contract.codeHash, fuzzyMeanExecMsg, 40_000);
+    console.log(failedPrivacyBudgetTx.rawLog);
 }
 
 (async () => {
