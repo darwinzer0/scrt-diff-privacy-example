@@ -87,7 +87,6 @@ pub fn try_add_observation(
 
         // add to sum
         stats.sum = stats.sum + I64F64::from_num(fixed_value);
-        //stats.mean = (fixed_value - stats.mean) / I32F32::from_num(stats.count) + stats.mean;
 
         if fixed_value > stats.upper_bound {
             stats.upper_bound = fixed_value;
@@ -124,10 +123,9 @@ pub fn try_fuzzy_count(
     }
 
     let epsilon = config.epsilon;
-    // privacy cost = 1 * epsilon
 
     let budget_remaining = get_budget_remaining(deps.storage)?;
-    if budget_remaining <= I32F32::from_num(epsilon) {
+    if budget_remaining < epsilon { // privacy cost = 1 * epsilon
         return Err(StdError::generic_err("Privacy budget exhausted"));
     }
 
@@ -171,7 +169,7 @@ pub fn try_fuzzy_mean(
     let privacy_cost = 2 * epsilon;
 
     let budget_remaining = get_budget_remaining(deps.storage)?;
-    if budget_remaining <= I32F32::from_num(privacy_cost) {
+    if budget_remaining < privacy_cost {
         return Err(StdError::generic_err("Privacy budget exhausted"));
     }
 
@@ -242,7 +240,7 @@ pub fn query(
 fn query_get_epsilon(
     deps: Deps,
 ) -> StdResult<Binary> {
-    // return the epsilon
+    // return the epsilon setting
     let epsilon = get_config(deps.storage, deps.api)?.epsilon.to_string();
     to_binary(&QueryAnswer::GetEpsilon { epsilon, })
 }
